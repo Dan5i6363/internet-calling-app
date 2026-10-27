@@ -79,11 +79,29 @@ export const ActiveCallScreen: React.FC<ActiveCallScreenProps> = ({
   };
 
   const getStateText = () => {
+    if (isSimulated) {
+      switch (callState) {
+        case 'validating':
+          return 'Verifying Telephony Route...';
+        case 'connecting':
+          return 'Simulating Dialing Sequence...';
+        case 'ringing':
+          return 'Simulating Ringback (Audio Test)...';
+        case 'unavailable':
+        case 'failed':
+          return 'Outbound Blocked: ₹0 Budget (PSTN Disabled)';
+        case 'ended':
+          return 'Dialer Test Ended';
+        default:
+          return 'Simulating Route...';
+      }
+    }
+
     switch (callState) {
       case 'validating':
         return 'Verifying Route...';
       case 'connecting':
-        return 'Connecting Carrier Network...';
+        return 'Connecting Carrier Gateway...';
       case 'ringing':
         return 'Ringing Recipient Phone...';
       case 'connected':
@@ -164,8 +182,21 @@ export const ActiveCallScreen: React.FC<ActiveCallScreenProps> = ({
           <span>{getStateText()}</span>
         </div>
 
+        {/* Transparent Compliance & Reality Notice */}
+        {isSimulated && (
+          <div className="mt-5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 max-w-xs text-center text-[11px] text-amber-300 animate-fade-in">
+            <p className="font-bold mb-1 flex items-center justify-center gap-1">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>Zero-Cost Simulation Notice</span>
+            </p>
+            <p className="text-slate-300 leading-normal text-[11px]">
+              No real telephone connection was placed. Arbitrary calling to Indian mobile numbers is blocked on ₹0 budget due to carrier termination fees and Indian DoT regulations.
+            </p>
+          </div>
+        )}
+
         {/* Animated wave bars during active call */}
-        {callState === 'connected' && !showKeypad && (
+        {callState === 'connected' && !showKeypad && !isSimulated && (
           <div className="flex items-center justify-center gap-1.5 mt-8 h-10">
             {[40, 75, 55, 90, 60, 80, 45, 70, 50].map((h, i) => (
               <div

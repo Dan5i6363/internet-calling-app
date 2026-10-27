@@ -1,6 +1,6 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert');
-const { validateAndFormatNumber, COUNTRIES, evaluateEligibility } = require('../server/telephonyUtils');
+const { validateAndFormatNumber, COUNTRIES, evaluateEligibility, mockTelephonyProvider } = require('../server/telephonyUtils');
 const { telephonyStore } = require('../server/telephonyStore');
 
 describe('Telephony Engine & Dialing Suite', () => {
@@ -59,7 +59,46 @@ describe('Telephony Engine & Dialing Suite', () => {
     });
   });
 
-  // 3. Rate Limiter and Telephony Store
+  // 3. Mock Provider Lifecycle & Non-Deceptive State Handling
+  describe('Mock Telephony Engine Lifecycle', () => {
+    test('Initiates simulated call with transparent labeling', async () => {
+      const session = await mockTelephonyProvider.initiateCall({
+        targetNumber: '+919876543210',
+        countryCode: 'IN',
+      });
+
+      assert.ok(session.callId.startsWith('mock_call_'));
+      assert.strictEqual(session.isSimulated, true);
+      assert.strictEqual(session.targetNumber, '+919876543210');
+      assert.strictEqual(session.state, 'connecting');
+    });
+
+    test('Handles simulated unavailable / failure test number', async () => {
+      const session = await mockTelephonyProvider.initiateCall({
+        targetNumber: '+919876500000',
+        countryCode: 'IN',
+      });
+
+      assert.strictEqual(session.state, 'unavailable');
+      assert.ok(session.endReason.includes('unavailable'));
+    });
+
+    test('Terminates active call before completion', async () => {
+      const session = await mockTelephonyProvider.initiateCall({
+        targetNumber: '+919876543210',
+        countryCode: 'IN',
+      });
+
+      const term = await mockTelephonyProvider.terminateCall(session.callId);
+      assert.strictEqual(term.success, true);
+
+      const status = await mockTelephonyProvider.getCallStatus(session.callId);
+      assert.strictEqual(status.state, 'ended');
+      assert.strictEqual(status.durationSeconds, 0);
+    });
+  });
+
+  // 4. Rate Limiter and Telephony Store
   describe('Telephony Store & Abuse Prevention', () => {
     test('Rate limiter allows requests below threshold', () => {
       const testIp = '192.168.1.99';

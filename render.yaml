@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: voipify-calling-app
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENABLE_REAL_PSTN_CALLS
+        value: "false"
+      - key: NEXT_PUBLIC_STUN_SERVERS
+        value: "stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302"

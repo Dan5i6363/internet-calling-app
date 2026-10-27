@@ -331,15 +331,24 @@ export const PhoneDialerApp: React.FC = () => {
           </div>
 
           {/* Call Button */}
-          <div className="pb-2 flex justify-center">
+          <div className="pb-2 flex flex-col items-center">
             <button
               disabled={isCalling || !rawDigits}
               onClick={() => handleInitiateCall()}
               className="flex items-center justify-center gap-2 h-16 w-16 md:h-18 md:w-18 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-xl shadow-emerald-500/25 active:scale-90 transition-all disabled:opacity-40 disabled:scale-100 disabled:shadow-none"
-              aria-label="Initiate Phone Call"
+              aria-label={
+                eligibility?.isSimulated
+                  ? 'Simulated Dialer Test (Outbound PSTN Disabled)'
+                  : 'Initiate Real Telephony Call'
+              }
             >
               <Phone className="h-7 w-7" />
             </button>
+            <span className="text-[10px] text-slate-500 mt-2 font-medium tracking-wide">
+              {eligibility?.isSimulated
+                ? 'Simulated Dial Test • Real Outbound Disabled (₹0)'
+                : 'Carrier Interconnect Active'}
+            </span>
           </div>
         </div>
       )}

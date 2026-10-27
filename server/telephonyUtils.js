@@ -125,8 +125,97 @@ function evaluateEligibility(targetCountryCode = 'IN') {
   };
 }
 
+class MockTelephonyProvider {
+  constructor() {
+    this.name = 'MockTelephonyEngine (₹0 Demo)';
+    this.isSimulated = true;
+    this.sessions = new Map();
+  }
+
+  async initiateCall(req) {
+    const callId = 'mock_call_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+    if (req.simulateFailure || (req.targetNumber && req.targetNumber.endsWith('00000'))) {
+      const failedSession = {
+        callId,
+        targetNumber: req.targetNumber,
+        countryCode: req.countryCode,
+        providerName: this.name,
+        isSimulated: true,
+        state: 'unavailable',
+        startedAt: Date.now(),
+        endedAt: Date.now(),
+        durationSeconds: 0,
+        endReason: 'Simulated: Destination subscriber is busy or unavailable',
+      };
+      this.sessions.set(callId, failedSession);
+      return failedSession;
+    }
+
+    const session = {
+      callId,
+      targetNumber: req.targetNumber,
+      countryCode: req.countryCode,
+      providerName: this.name,
+      isSimulated: true,
+      state: 'connecting',
+      startedAt: Date.now(),
+      durationSeconds: 0,
+    };
+
+    this.sessions.set(callId, session);
+
+    // Realistic state progression:
+    // 1.2s -> ringing
+    setTimeout(() => {
+      const s = this.sessions.get(callId);
+      if (s && s.state === 'connecting') {
+        s.state = 'ringing';
+      }
+    }, 1200);
+
+    // 4.5s -> unavailable (NEVER connected, because no real telephone connection exists at ₹0)
+    setTimeout(() => {
+      const s = this.sessions.get(callId);
+      if (s && s.state === 'ringing') {
+        s.state = 'unavailable';
+        s.endedAt = Date.now();
+        s.durationSeconds = 0;
+        s.endReason =
+          'Real phone call blocked: ₹0 budget cannot place outbound calls to mobile networks. Outbound PSTN disabled under Indian DoT regulations.';
+      }
+    }, 4500);
+
+    return session;
+  }
+
+  async terminateCall(callId) {
+    const session = this.sessions.get(callId);
+    if (!session) {
+      return { success: false, durationSeconds: 0 };
+    }
+
+    const now = Date.now();
+    session.endedAt = now;
+    session.state = 'ended';
+    session.durationSeconds = 0;
+    session.endReason = 'Call ended by caller';
+
+    return { success: true, durationSeconds: 0 };
+  }
+
+  async getCallStatus(callId) {
+    const session = this.sessions.get(callId);
+    if (!session) return null;
+    return session;
+  }
+}
+
+const mockTelephonyProvider = new MockTelephonyProvider();
+
 module.exports = {
   COUNTRIES,
   validateAndFormatNumber,
   evaluateEligibility,
+  mockTelephonyProvider,
 };
