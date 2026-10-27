@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { PhoneDialerApp } from '@/components/telephony/PhoneDialerApp';
 import {
   PhoneCall,
+  Phone,
   Users,
   Clock,
   Activity,
@@ -26,8 +28,8 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // App Tabs: 'directory' | 'history' | 'diagnostics'
-  const [activeTab, setActiveTab] = useState<'directory' | 'history' | 'diagnostics'>('directory');
+  // App Tabs: 'phone' | 'directory' | 'history' | 'diagnostics'
+  const [activeTab, setActiveTab] = useState<'phone' | 'directory' | 'history' | 'diagnostics'>('phone');
 
   // Directory & Presence
   const [registeredUsers, setRegisteredUsers] = useState<Array<{ username: string; displayName: string }>>([]);
@@ -548,6 +550,8 @@ export default function Home() {
 
       {/* Main Tab Screen Content */}
       <div className="flex-1 p-4 pb-20 overflow-hidden flex flex-col">
+        {activeTab === 'phone' && <PhoneDialerApp />}
+
         {activeTab === 'directory' && (
           <DirectoryTab
             users={registeredUsers}
@@ -576,41 +580,53 @@ export default function Home() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 flex items-center justify-around py-2.5 z-20">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 flex items-center justify-around py-2 z-20">
+        <button
+          onClick={() => setActiveTab('phone')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
+            activeTab === 'phone'
+              ? 'text-emerald-400 font-semibold'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Phone className="h-5 w-5" />
+          <span className="text-[10px]">Phone</span>
+        </button>
+
         <button
           onClick={() => setActiveTab('directory')}
-          className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition-all ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
             activeTab === 'directory'
               ? 'text-emerald-400 font-semibold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <Users className="h-5 w-5" />
-          <span className="text-[11px]">Contacts</span>
+          <span className="text-[10px]">App Call</span>
         </button>
 
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition-all ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
             activeTab === 'history'
               ? 'text-emerald-400 font-semibold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <Clock className="h-5 w-5" />
-          <span className="text-[11px]">Recents</span>
+          <span className="text-[10px]">Recents</span>
         </button>
 
         <button
           onClick={() => setActiveTab('diagnostics')}
-          className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition-all ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
             activeTab === 'diagnostics'
               ? 'text-emerald-400 font-semibold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <Activity className="h-5 w-5" />
-          <span className="text-[11px]">Diagnostics</span>
+          <span className="text-[10px]">Diagnostics</span>
         </button>
       </nav>
 
