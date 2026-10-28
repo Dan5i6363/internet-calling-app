@@ -9,15 +9,22 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = http.createServer((req, res) => {
+    // Ultra-fast health check probe for cloud load balancers / Render
+    if (req.url === '/healthz' || req.url === '/api/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', uptime: Math.round(process.uptime()) }));
+      return;
+    }
+
     handle(req, res);
   });
 
   // Attach WebSocket signaling server to the HTTP server
   const signaling = new SignalingServer(server);
 
-  server.listen(port, () => {
-    console.log(`> Internet Calling App ready on http://localhost:${port}`);
-    console.log(`> WebSocket Signaling active on ws://localhost:${port}/ws`);
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`> Internet Calling App ready on http://0.0.0.0:${port}`);
+    console.log(`> WebSocket Signaling active on ws://0.0.0.0:${port}/ws`);
   });
 
   const cleanup = () => {

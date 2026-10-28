@@ -22,6 +22,9 @@ function loadTelephonyDB() {
 
 function saveTelephonyDB(db) {
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
     const tempFile = `${TELEPHONY_DB_FILE}.tmp`;
     fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf8');
     fs.renameSync(tempFile, TELEPHONY_DB_FILE);

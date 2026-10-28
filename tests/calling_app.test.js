@@ -39,18 +39,27 @@ describe('Internet Calling App Test Suite', () => {
     });
   });
 
+  const openSockets = [];
+
   after(() => {
+    for (const ws of openSockets) {
+      try {
+        ws.terminate();
+      } catch (e) {}
+    }
+    openSockets.length = 0;
     signaling.close();
     if (typeof server.closeAllConnections === 'function') {
       server.closeAllConnections();
     }
     server.close();
-    process.exit(0);
+    setTimeout(() => process.exit(0), 50);
   });
 
   function connectClient(token) {
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(`ws://localhost:${port}/ws?token=${token}`);
+      openSockets.push(ws);
       ws.on('open', () => resolve(ws));
       ws.on('error', reject);
     });
@@ -269,6 +278,68 @@ describe('Internet Calling App Test Suite', () => {
       const recorded = history.find(c => c.caller === tokenAlice.username && c.callee === tokenBob.username);
       assert.ok(recorded, 'Call must be recorded in history');
       assert.strictEqual(recorded.status, 'completed');
+
+      wsAlice.close();
+      wsBob.close();
+    });
+
+    test('Call Rejection Flow: Callee rejects incoming call', async () => {
+      const wsAlice = await connectClient(tokenAlice.token);
+      const wsBob = await connectClient(tokenBob.token);
+
+      const ringingPromise = waitForMessage(wsAlice, 'call_ringing');
+      const incomingPromise = waitForMessage(wsBob, 'incoming_call');
+
+      wsAlice.send(JSON.stringify({
+        type: 'call_initiate',
+        targetUsername: tokenBob.username
+      }));
+
+      const ringingMsg = await ringingPromise;
+      const incomingMsg = await incomingPromise;
+      const currentCallId = ringingMsg.callId;
+
+      // Bob rejects call
+      const rejectedPromise = waitForMessage(wsAlice, 'call_rejected');
+      wsBob.send(JSON.stringify({
+        type: 'call_reject',
+        callId: currentCallId,
+        reason: 'declined'
+      }));
+
+      const rejectedMsg = await rejectedPromise;
+      assert.strictEqual(rejectedMsg.callId, currentCallId);
+      assert.strictEqual(rejectedMsg.reason, 'declined');
+
+      wsAlice.close();
+      wsBob.close();
+    });
+
+    test('Call Cancellation Flow: Caller cancels before answer', async () => {
+      const wsAlice = await connectClient(tokenAlice.token);
+      const wsBob = await connectClient(tokenBob.token);
+
+      const ringingPromise = waitForMessage(wsAlice, 'call_ringing');
+      const incomingPromise = waitForMessage(wsBob, 'incoming_call');
+
+      wsAlice.send(JSON.stringify({
+        type: 'call_initiate',
+        targetUsername: tokenBob.username
+      }));
+
+      const ringingMsg = await ringingPromise;
+      await incomingPromise;
+      const currentCallId = ringingMsg.callId;
+
+      // Alice cancels
+      const cancelPromise = waitForMessage(wsBob, 'call_cancelled');
+      wsAlice.send(JSON.stringify({
+        type: 'call_cancel',
+        callId: currentCallId
+      }));
+
+      const cancelMsg = await cancelPromise;
+      assert.strictEqual(cancelMsg.callId, currentCallId);
 
       wsAlice.close();
       wsBob.close();

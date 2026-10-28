@@ -1,10 +1,10 @@
-# Voipify — Internet Calling App (Web + Mobile PWA)
+# Voipify — Internet Calling & Phone Dialer App
 
-A responsive, mobile-first internet calling application for free, high-fidelity app-to-app audio calling over Wi-Fi or mobile data without cellular calling balance or telephone number requirements.
+A mobile-first internet calling application built with Next.js 15, TypeScript, Tailwind CSS, and WebRTC, designed to deploy autonomously on free-tier cloud infrastructure without requiring the owner's laptop to stay powered on.
 
 ---
 
-## ⚡ Quick Start (Under 1 Minute)
+## ⚡ Quick Start
 
 ### 1. Install Dependencies
 ```bash
@@ -20,15 +20,12 @@ cp .env.example .env.local
 ```bash
 npm test
 ```
-All 9 unit & integration tests run in ~2 seconds:
-- Password hashing & JWT issuance
-- Duplicate username prevention
-- Contact search & self-filtering
-- Real-time presence exchange
-- Rejection of self-calls & offline users
-- Complete WebRTC call flow (Ringing ➔ Accept ➔ SDP Relay ➔ ICE Relay ➔ Busy detection ➔ Hang up ➔ DB persistence)
+All **33 unit, integration, and robustness tests** run and pass across 3 suites:
+- **Calling App Suite (12 tests)**: JWT authentication, presence sync, SDP offer/answer relay, ICE candidate exchange, busy state, call rejection, call cancellation, and DB logging.
+- **Telephony Suite (14 tests)**: International E.164 phone number validation, DoT/TRAI eligibility gating, mock provider state boundaries, rate limiting, and favorites management.
+- **Robustness Suite (7 tests)**: Environment fallbacks, database self-healing, corrupt file recovery, non-deceptive call states, and input boundary conditions.
 
-### 4. Start Development Server
+### 4. Start Server Locally
 ```bash
 npm run dev
 ```
@@ -36,59 +33,72 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
-## 📱 Two-Client Testing Procedure
+## 📱 Feature Capabilities & Architecture
 
-1. **Window 1 (Alice)**:
-   - Open [http://localhost:3000](http://localhost:3000) in Chrome / Edge.
-   - Click "Sign Up" and register with username `alice` (Password: `password123`).
-   - Observe the presence indicator turn **Green (Available)**.
-
-2. **Window 2 (Bob)**:
-   - Open [http://localhost:3000](http://localhost:3000) in an **Incognito / Private Window** (or a second device on the same Wi-Fi).
-   - Click "Sign Up" and register with username `bob` (Password: `password123`).
-
-3. **Placing a Call**:
-   - In Alice's window, find `bob` in the Contacts tab (showing online status).
-   - Click the green **Phone** button next to Bob.
-   - Alice hears synthetic **Ringback tone** (440+480 Hz cadence).
-   - Bob's screen displays a full-screen **Incoming Call Modal** with pulsing ring animation and musical chime ringtone.
-
-4. **Accepting & In-Call Audio**:
-   - Bob clicks **Accept**.
-   - Ringing stops instantly. WebRTC peer connection initializes and acquires microphone permission.
-   - Both screens transition to the **Active Call Screen**:
-     - Real-time timer starts (`00:01`, `00:02`...).
-     - Green audio visualizer waveform animates in response to microphone sound.
-     - Click **Mute** to mute local audio track.
-     - Click **Diagnostics** to view live **Round-Trip Time (RTT)**, **Jitter**, **Bitrate**, and **ICE Candidate Type**.
-
-5. **Ending Call & History**:
-   - Either party clicks the red **End Call** button.
-   - Call beep plays.
-   - Navigate to the **Recents** tab to view the logged call with duration and timestamp.
+| Feature | Status | Operational Details |
+| :--- | :--- | :--- |
+| **App-to-App Internet Calling** | **Live & Functional** | Real encrypted WebRTC peer-to-peer audio calls between registered users with active presence, ringback, mute, visualizer, and diagnostics. |
+| **Phone Dialer Interface** | **Live & Functional** | Tactile 12-key numeric dialpad with authentic ITU-T DTMF audio feedback, country code picker, E.164 parsing, favorites, and recents. |
+| **Outbound PSTN Mobile Calls** | **Safely Disabled (₹0 Budget)** | Calling arbitrary telephone numbers without our app requires paid PSTN termination (~₹1.80–₹3.50/min) and Indian DoT/TRAI compliance. **The app never simulates a connected call.** |
+| **Cloud Deployment** | **Ready for Deploy** | Configured for Render Free Tier (`render.yaml`) and container hosting (`Dockerfile`) so the app runs autonomously without the owner's laptop. |
 
 ---
 
-## 📲 Installing as a Mobile PWA
+## ☁️ Cloud Deployment (Autonomous Hosting)
 
-- **Android (Chrome)**: Tap the "Install" badge in the top bar or Chrome menu ➔ "Add to Home screen".
-- **iOS (Safari)**: Tap the Share button ➔ "Add to Home Screen".
-- Launching from the home screen runs Voipify in standalone full-screen mode with native mobile ergonomics.
+### Deploy to Render Free Tier (Zero Laptop Dependency)
+1. Push this repository to your GitHub account:
+   ```bash
+   git remote add origin https://github.com/<your-username>/voipify.git
+   git push -u origin master
+   ```
+2. Log into [render.com](https://render.com) and click **New +** ➔ **Blueprint**.
+3. Select your repository. Render automatically reads [render.yaml](render.yaml) and configures:
+   - Node.js runtime with WebSockets
+   - Build: `npm install && npm run build`
+   - Start: `node server.js`
+   - Health check probe: `/api/health`
+4. Deploy the service. Once built, Render issues a permanent public HTTPS URL (`https://voipify-xxxx.onrender.com`).
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## 🔒 Environment Variables Reference
 
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Lucide icons.
-- **Audio & Media**: Native WebRTC (`RTCPeerConnection`), OPUS codec (48kHz, PLC, FEC), Web Audio API for audio visualization and synthetic ringtones.
-- **Signaling**: Authenticated WebSocket (`ws`) server with JWT handshake and heartbeat monitoring.
-- **Persistence**: Atomic file-backed JSON database store with zero external container dependencies.
-- **NAT Traversal**: STUN (Google / Cloudflare defaults) + configurable TURN relay via `.env`.
+| Variable | Required? | Default / Purpose |
+| :--- | :--- | :--- |
+| `PORT` | Optional | `3000` (Local) / `10000` (Render default) |
+| `NODE_ENV` | Optional | `production` in deployment |
+| `JWT_SECRET` | **Required** | Random 32+ character string for session tokens |
+| `ENABLE_REAL_PSTN_CALLS` | Optional | `false` (Maintains ₹0 budget and prevents unexpected carrier charges) |
+| `NEXT_PUBLIC_STUN_SERVERS` | Optional | `stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302` |
+| `DATABASE_URL` | Optional | Remote PostgreSQL connection string for hosted persistence |
+| `TWILIO_ACCOUNT_SID` | Optional | Telephony provider SID (if upgrading to paid PSTN route) |
+| `TWILIO_AUTH_TOKEN` | Optional | Telephony provider token |
+| `TWILIO_PHONE_NUMBER` | Optional | E.164 outbound Caller ID number |
 
 ---
 
-## 📚 Documentation Links
+## 🛡️ Rollback and Recovery Instructions
+
+If you need to roll back changes or restore a clean state:
+```bash
+# View recent commits
+git log --oneline -n 5
+
+# Reset to the previous commit while keeping file changes unstaged
+git reset HEAD~1
+
+# Or completely restore to a known commit
+git reset --hard <commit-hash>
+```
+
+---
+
+## 📚 Technical Documentation Links
 
 - [Architecture & Protocol Specification](docs/ARCHITECTURE.md)
+- [Telephony Provider & ₹0 Budget Analysis](docs/TELEPHONY_AND_BUDGET_ANALYSIS.md)
+- [Autonomous Cloud Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 - [Security, Privacy & TURN Relay Deployment](docs/SECURITY_AND_TURN.md)
-- [DoT India Telecom Regulatory Analysis & Technical Roadmap](docs/TELECOM_AND_FUTURE_ROADMAP.md)
+- [DoT India Telecom Regulatory Analysis](docs/TELECOM_AND_FUTURE_ROADMAP.md)
+- [Hosted Database Schema](scripts/schema.sql)
