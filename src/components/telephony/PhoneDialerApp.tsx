@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, Delete, Star, Clock, Grid, AlertCircle, Info } from 'lucide-react';
+import { Phone, Delete, Star, Clock, Grid, AlertCircle, Info, Radio } from 'lucide-react';
 import { COUNTRIES, CountryInfo, validateAndFormatNumber, formatDisplayNumber } from '../../lib/telephony/phoneUtils';
 import { CountryPicker } from './CountryPicker';
 import { Keypad } from './Keypad';
@@ -11,7 +11,9 @@ import { CallHistoryList } from './CallHistoryList';
 import { FavoritesList } from './FavoritesList';
 import { CallProgressState, EligibilityResult } from '../../lib/telephony/types';
 
-export const PhoneDialerApp: React.FC = () => {
+export const PhoneDialerApp: React.FC<{ onSwitchToAppCall?: () => void }> = ({
+  onSwitchToAppCall,
+}) => {
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(COUNTRIES[0]); // Default India +91
   const [rawDigits, setRawDigits] = useState<string>('');
   const [subTab, setSubTab] = useState<'dialer' | 'recents' | 'favorites'>('dialer');
@@ -232,6 +234,25 @@ export const PhoneDialerApp: React.FC = () => {
     <div className="flex flex-col h-full space-y-4">
       {/* Route & Compliance Transparency Banner */}
       <EligibilityBanner eligibility={eligibility} />
+
+      {/* App-to-App Call Callout */}
+      {onSwitchToAppCall && (
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-300">
+          <div className="flex items-center gap-2">
+            <Radio className="h-4 w-4 text-emerald-400 shrink-0 animate-pulse" />
+            <div>
+              <p className="font-semibold text-emerald-300">Want free two-way audio calling?</p>
+              <p className="text-[11px] text-emerald-400/80">Real peer-to-peer WebRTC calls with other users cost ₹0.</p>
+            </div>
+          </div>
+          <button
+            onClick={onSwitchToAppCall}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-colors shrink-0"
+          >
+            App Call
+          </button>
+        </div>
+      )}
 
       {/* Mode Sub-navigation */}
       <div className="flex items-center justify-center p-1 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-semibold">

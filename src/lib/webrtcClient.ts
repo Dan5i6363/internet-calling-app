@@ -28,6 +28,7 @@ export class WebRTCClient {
   private statsInterval: any = null;
   private lastBytesReceived = 0;
   private lastStatsTimestamp = 0;
+  private iceCandidateQueue: RTCIceCandidateInit[] = [];
 
   constructor(options: WebRTCClientOptions) {
     this.options = options;
@@ -103,6 +104,7 @@ export class WebRTCClient {
   async handleOffer(offer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
     if (!this.pc) throw new Error('PeerConnection not initialized');
     await this.pc.setRemoteDescription(new RTCSessionDescription(offer));
+    await this.drainIceCandidates();
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
     return answer;
@@ -111,14 +113,33 @@ export class WebRTCClient {
   async handleAnswer(answer: RTCSessionDescriptionInit): Promise<void> {
     if (!this.pc) throw new Error('PeerConnection not initialized');
     await this.pc.setRemoteDescription(new RTCSessionDescription(answer));
+    await this.drainIceCandidates();
   }
 
   async addIceCandidate(candidate: RTCIceCandidateInit): Promise<void> {
     if (!this.pc) return;
+    if (!this.pc.remoteDescription) {
+      this.iceCandidateQueue.push(candidate);
+      return;
+    }
     try {
       await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
     } catch (err) {
       console.warn('Failed to add ICE candidate:', err);
+    }
+  }
+
+  private async drainIceCandidates(): Promise<void> {
+    if (!this.pc) return;
+    while (this.iceCandidateQueue.length > 0) {
+      const candidate = this.iceCandidateQueue.shift();
+      if (candidate) {
+        try {
+          await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.warn('Failed to add queued ICE candidate:', err);
+        }
+      }
     }
   }
 
@@ -233,5 +254,6 @@ export class WebRTCClient {
     this.isMuted = false;
     this.lastBytesReceived = 0;
     this.lastStatsTimestamp = 0;
+    this.iceCandidateQueue = [];
   }
 }

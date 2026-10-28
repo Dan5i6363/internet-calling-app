@@ -64,6 +64,7 @@ export default function Home() {
 
   // Refs
   const wsRef = useRef<WebSocket | null>(null);
+  const currentCallIdRef = useRef<string | null>(null);
   const webrtcClientRef = useRef<WebRTCClient | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const iceServersRef = useRef<RTCIceServer[]>([{ urls: 'stun:stun.l.google.com:19302' }]);
@@ -207,6 +208,7 @@ export default function Home() {
 
       case 'incoming_call': {
         toneGenerator?.startRingtone();
+        currentCallIdRef.current = msg.callId;
         setIncomingCall({
           callId: msg.callId,
           callerUsername: msg.callerUsername,
@@ -217,12 +219,16 @@ export default function Home() {
 
       case 'call_ringing': {
         toneGenerator?.startRingback();
+        currentCallIdRef.current = msg.callId;
+        setCurrentCallId(msg.callId);
         setCallState('ringing');
         break;
       }
 
       case 'call_accepted': {
         toneGenerator?.stopAll();
+        currentCallIdRef.current = msg.callId;
+        setCurrentCallId(msg.callId);
         setCallState('in_call');
 
         // Caller initiates WebRTC offer
@@ -246,6 +252,8 @@ export default function Home() {
 
       case 'call_started': {
         toneGenerator?.stopAll();
+        currentCallIdRef.current = msg.callId;
+        setCurrentCallId(msg.callId);
         setCallState('in_call');
         break;
       }
@@ -333,11 +341,12 @@ export default function Home() {
         }
       },
       onIceCandidate: (candidate) => {
-        if (currentCallId) {
+        const activeId = currentCallIdRef.current || currentCallId;
+        if (activeId) {
           wsRef.current?.send(
             JSON.stringify({
               type: 'ice_candidate',
-              callId: currentCallId,
+              callId: activeId,
               candidate,
             })
           );
@@ -366,10 +375,14 @@ export default function Home() {
       return;
     }
 
+    const matchedUser = registeredUsers.find(
+      (u) => u.username.toLowerCase() === targetUsername.toLowerCase()
+    );
+
     setIsOutgoing(true);
     setActivePeer({
       username: targetUsername,
-      displayName: targetUsername,
+      displayName: matchedUser?.displayName || targetUsername,
     });
     setCallState('calling');
 
@@ -386,6 +399,7 @@ export default function Home() {
     if (!incomingCall || !wsRef.current) return;
     toneGenerator?.stopAll();
 
+    currentCallIdRef.current = incomingCall.callId;
     setCurrentCallId(incomingCall.callId);
     setIsOutgoing(false);
     setActivePeer({
@@ -432,20 +446,23 @@ export default function Home() {
     toneGenerator?.stopAll();
     toneGenerator?.playEndBeep();
 
-    if (currentCallId && wsRef.current) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: 'call_end',
-          callId: currentCallId,
-        })
-      );
-    } else if (callState === 'calling' || callState === 'ringing') {
-      wsRef.current?.send(
-        JSON.stringify({
-          type: 'call_cancel',
-          callId: currentCallId,
-        })
-      );
+    const activeId = currentCallIdRef.current || currentCallId;
+    if (activeId && wsRef.current) {
+      if (callState === 'calling' || callState === 'ringing') {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'call_cancel',
+            callId: activeId,
+          })
+        );
+      } else {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'call_end',
+            callId: activeId,
+          })
+        );
+      }
     }
 
     cleanupCall();
@@ -457,6 +474,7 @@ export default function Home() {
       webrtcClientRef.current.close();
       webrtcClientRef.current = null;
     }
+    currentCallIdRef.current = null;
     setCurrentCallId(null);
     setCallState('idle');
     setActivePeer(null);
@@ -550,7 +568,9 @@ export default function Home() {
 
       {/* Main Tab Screen Content */}
       <div className="flex-1 p-4 pb-20 overflow-hidden flex flex-col">
-        {activeTab === 'phone' && <PhoneDialerApp />}
+        {activeTab === 'phone' && (
+          <PhoneDialerApp onSwitchToAppCall={() => setActiveTab('directory')} />
+        )}
 
         {activeTab === 'directory' && (
           <DirectoryTab
@@ -601,7 +621,14 @@ export default function Home() {
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Users className="h-5 w-5" />
+          <div className="relative">
+            <Users className="h-5 w-5" />
+            {onlineUsers.size > 0 && (
+              <span className="absolute -top-1 -right-2.5 flex h-3.5 min-w-3.5 px-1 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-slate-950">
+                {onlineUsers.size}
+              </span>
+            )}
+          </div>
           <span className="text-[10px]">App Call</span>
         </button>
 
