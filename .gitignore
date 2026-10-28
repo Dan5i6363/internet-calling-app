@@ -20,10 +20,12 @@ yarn-debug.log*
 yarn-error.log*
 
 .env*.local
-.env
+.env*
+*.bak
 data/
 *.sqlite
 
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+.neon

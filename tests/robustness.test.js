@@ -116,6 +116,7 @@ describe('System Robustness, Failure Resilience & Fallbacks', () => {
       assert.ok(typeof adapter.getUser === 'function');
       assert.ok(typeof adapter.createUser === 'function');
       assert.ok(typeof adapter.checkHealth === 'function');
+      assert.ok(typeof adapter.transaction === 'function');
       adapter.pool.end();
     });
 
@@ -126,6 +127,13 @@ describe('System Robustness, Failure Resilience & Fallbacks', () => {
       assert.strictEqual(health.connected, false);
       assert.ok(typeof health.error === 'string');
       await failingAdapter.close();
+    });
+
+    test('PostgresAdapter handles concurrent schema initialization safely without duplicate calls', () => {
+      const adapter = new PostgresAdapter('postgres://user:pass@ep-cool-db-1234.us-east-2.aws.neon.tech/neondb?sslmode=require');
+      assert.strictEqual(adapter.initPromise, null);
+      assert.strictEqual(adapter.initialized, false);
+      adapter.pool.end();
     });
   });
 });

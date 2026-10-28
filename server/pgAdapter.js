@@ -3,71 +3,91 @@ const { Pool } = require('pg');
 class PostgresAdapter {
   constructor(connectionString) {
     this.connectionString = connectionString;
+    const isLocalhost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+
     this.pool = new Pool({
       connectionString,
-      ssl: connectionString.includes('localhost') ? false : { rejectUnauthorized: false },
+      ssl: isLocalhost ? false : { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     });
+
+    this.pool.on('error', (err) => {
+      console.error('[PostgresPool] Unexpected idle client error:', err.message);
+    });
+
     this.initialized = false;
+    this.initPromise = null;
   }
 
   async initSchema() {
     if (this.initialized) return;
-    const client = await this.pool.connect();
-    try {
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id VARCHAR(64) PRIMARY KEY,
-          username VARCHAR(32) UNIQUE NOT NULL,
-          display_name VARCHAR(64) NOT NULL,
-          password_hash VARCHAR(128) NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
+    if (this.initPromise) return this.initPromise;
 
-        CREATE TABLE IF NOT EXISTS app_call_records (
-          id VARCHAR(64) PRIMARY KEY,
-          caller VARCHAR(32) NOT NULL,
-          callee VARCHAR(32) NOT NULL,
-          status VARCHAR(24) NOT NULL,
-          started_at TIMESTAMP WITH TIME ZONE NOT NULL,
-          ended_at TIMESTAMP WITH TIME ZONE,
-          duration_seconds INTEGER DEFAULT 0,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
+    this.initPromise = (async () => {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS users (
+            id VARCHAR(64) PRIMARY KEY,
+            username VARCHAR(32) UNIQUE NOT NULL,
+            display_name VARCHAR(64) NOT NULL,
+            password_hash VARCHAR(128) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
 
-        CREATE INDEX IF NOT EXISTS idx_call_caller ON app_call_records(caller);
-        CREATE INDEX IF NOT EXISTS idx_call_callee ON app_call_records(callee);
+          CREATE TABLE IF NOT EXISTS app_call_records (
+            id VARCHAR(64) PRIMARY KEY,
+            caller VARCHAR(32) NOT NULL,
+            callee VARCHAR(32) NOT NULL,
+            status VARCHAR(24) NOT NULL,
+            started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            ended_at TIMESTAMP WITH TIME ZONE,
+            duration_seconds INTEGER DEFAULT 0,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
 
-        CREATE TABLE IF NOT EXISTS telephony_calls (
-          id VARCHAR(64) PRIMARY KEY,
-          call_id VARCHAR(64) NOT NULL,
-          target_number VARCHAR(32) NOT NULL,
-          country_code VARCHAR(8) NOT NULL,
-          provider_name VARCHAR(64) NOT NULL,
-          is_simulated BOOLEAN DEFAULT TRUE,
-          state VARCHAR(24) NOT NULL,
-          started_at TIMESTAMP WITH TIME ZONE NOT NULL,
-          ended_at TIMESTAMP WITH TIME ZONE,
-          duration_seconds INTEGER DEFAULT 0,
-          end_reason TEXT,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
+          CREATE INDEX IF NOT EXISTS idx_call_caller ON app_call_records(caller);
+          CREATE INDEX IF NOT EXISTS idx_call_callee ON app_call_records(callee);
 
-        CREATE TABLE IF NOT EXISTS telephony_favorites (
-          id VARCHAR(64) PRIMARY KEY,
-          name VARCHAR(64) NOT NULL,
-          phone_number VARCHAR(32) NOT NULL,
-          country_code VARCHAR(8) NOT NULL,
-          dial_code VARCHAR(8) NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-      this.initialized = true;
-    } finally {
-      client.release();
-    }
+          CREATE TABLE IF NOT EXISTS telephony_calls (
+            id VARCHAR(64) PRIMARY KEY,
+            call_id VARCHAR(64) NOT NULL,
+            target_number VARCHAR(32) NOT NULL,
+            country_code VARCHAR(8) NOT NULL,
+            provider_name VARCHAR(64) NOT NULL,
+            is_simulated BOOLEAN DEFAULT TRUE,
+            state VARCHAR(24) NOT NULL,
+            started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            ended_at TIMESTAMP WITH TIME ZONE,
+            duration_seconds INTEGER DEFAULT 0,
+            end_reason TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS telephony_favorites (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(64) NOT NULL,
+            phone_number VARCHAR(32) NOT NULL,
+            country_code VARCHAR(8) NOT NULL,
+            dial_code VARCHAR(8) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        await client.query('COMMIT');
+        this.initialized = true;
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        this.initPromise = null;
+        throw err;
+      } finally {
+        client.release();
+      }
+    })();
+
+    return this.initPromise;
   }
 
   async checkHealth() {
@@ -77,6 +97,22 @@ class PostgresAdapter {
       return { connected: res.rowCount === 1, latencyMs: Date.now() - start };
     } catch (err) {
       return { connected: false, error: err.message };
+    }
+  }
+
+  async transaction(callback) {
+    await this.initSchema();
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
     }
   }
 

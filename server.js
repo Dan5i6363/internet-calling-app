@@ -1,3 +1,6 @@
+const { loadEnvConfig } = require('@next/env');
+loadEnvConfig(process.cwd());
+
 const http = require('http');
 const next = require('next');
 const { SignalingServer } = require('./server/signaling');

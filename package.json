@@ -11,6 +11,8 @@
     "test": "node --test tests/calling_app.test.js && node --test tests/telephony.test.js && node --test tests/robustness.test.js"
   },
   "dependencies": {
+    "@neon/config": "^1.9.5",
+    "@neon/env": "^1.6.6",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.475.0",
