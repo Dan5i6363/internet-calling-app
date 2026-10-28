@@ -9,7 +9,7 @@ import {
   Phone,
   Clock,
 } from 'lucide-react';
-import { CallRecord } from '@/lib/db';
+import { CallRecord } from '../lib/db';
 
 interface CallHistoryTabProps {
   currentUsername: string;

@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Wifi,
 } from 'lucide-react';
-import { WebRTCDiagnostics } from '@/lib/webrtcClient';
+import { WebRTCDiagnostics } from '../lib/webrtcClient';
 import { AudioVisualizer } from './AudioVisualizer';
 
 interface ActiveCallModalProps {

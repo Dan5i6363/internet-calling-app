@@ -12,9 +12,9 @@ import {
   ShieldAlert,
   Radio,
 } from 'lucide-react';
-import { CallProgressState } from '@/lib/telephony/types';
+import { CallProgressState } from '../../lib/telephony/types';
 import { Keypad } from './Keypad';
-import { dtmfAudio } from '@/lib/telephony/dtmfAudio';
+import { dtmfAudio } from '../../lib/telephony/dtmfAudio';
 
 interface ActiveCallScreenProps {
   targetNumber: string;

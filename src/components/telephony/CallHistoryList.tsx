@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { PhoneOutgoing, PhoneOff, Phone, Star, Clock } from 'lucide-react';
-import { COUNTRIES } from '@/lib/telephony/phoneUtils';
+import { COUNTRIES } from '../../lib/telephony/phoneUtils';
 
 interface CallRecord {
   id: string;

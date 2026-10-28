@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { dtmfAudio } from '@/lib/telephony/dtmfAudio';
+import { dtmfAudio } from '../../lib/telephony/dtmfAudio';
 import { Delete } from 'lucide-react';
 
 interface KeypadProps {

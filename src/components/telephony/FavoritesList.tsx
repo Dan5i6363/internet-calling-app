@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Star, Phone, Trash2, Plus, UserPlus } from 'lucide-react';
-import { COUNTRIES } from '@/lib/telephony/phoneUtils';
+import { COUNTRIES } from '../../lib/telephony/phoneUtils';
 
 interface Favorite {
   id: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { COUNTRIES, CountryInfo } from '@/lib/telephony/phoneUtils';
+import { COUNTRIES, CountryInfo } from '../../lib/telephony/phoneUtils';
 import { ChevronDown, Search, X } from 'lucide-react';
 
 interface CountryPickerProps {

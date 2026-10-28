@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ShieldAlert, Info, X, CheckCircle2, ExternalLink } from 'lucide-react';
-import { EligibilityResult } from '@/lib/telephony/types';
+import { EligibilityResult } from '../../lib/telephony/types';
 
 interface EligibilityBannerProps {
   eligibility: EligibilityResult | null;

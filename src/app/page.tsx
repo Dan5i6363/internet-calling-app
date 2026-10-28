@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { PhoneDialerApp } from '@/components/telephony/PhoneDialerApp';
+import { PhoneDialerApp } from '../components/telephony/PhoneDialerApp';
 import {
   PhoneCall,
   Phone,
@@ -13,15 +13,15 @@ import {
   Wifi,
   Sparkles,
 } from 'lucide-react';
-import { AuthScreen } from '@/components/AuthScreen';
-import { DirectoryTab } from '@/components/DirectoryTab';
-import { CallHistoryTab } from '@/components/CallHistoryTab';
-import { DiagnosticsTab } from '@/components/DiagnosticsTab';
-import { IncomingCallModal } from '@/components/IncomingCallModal';
-import { ActiveCallModal } from '@/components/ActiveCallModal';
-import { WebRTCClient, WebRTCDiagnostics } from '@/lib/webrtcClient';
-import { toneGenerator } from '@/lib/tones';
-import { CallRecord } from '@/lib/db';
+import { AuthScreen } from '../components/AuthScreen';
+import { DirectoryTab } from '../components/DirectoryTab';
+import { CallHistoryTab } from '../components/CallHistoryTab';
+import { DiagnosticsTab } from '../components/DiagnosticsTab';
+import { IncomingCallModal } from '../components/IncomingCallModal';
+import { ActiveCallModal } from '../components/ActiveCallModal';
+import { WebRTCClient, WebRTCDiagnostics } from '../lib/webrtcClient';
+import { toneGenerator } from '../lib/tones';
+import { CallRecord } from '../lib/db';
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);

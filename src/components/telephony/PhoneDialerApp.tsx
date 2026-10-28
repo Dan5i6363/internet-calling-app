@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Phone, Delete, Star, Clock, Grid, AlertCircle, Info } from 'lucide-react';
-import { COUNTRIES, CountryInfo, validateAndFormatNumber, formatDisplayNumber } from '@/lib/telephony/phoneUtils';
+import { COUNTRIES, CountryInfo, validateAndFormatNumber, formatDisplayNumber } from '../../lib/telephony/phoneUtils';
 import { CountryPicker } from './CountryPicker';
 import { Keypad } from './Keypad';
 import { EligibilityBanner } from './EligibilityBanner';
 import { ActiveCallScreen } from './ActiveCallScreen';
 import { CallHistoryList } from './CallHistoryList';
 import { FavoritesList } from './FavoritesList';
-import { CallProgressState, EligibilityResult } from '@/lib/telephony/types';
+import { CallProgressState, EligibilityResult } from '../../lib/telephony/types';
 
 export const PhoneDialerApp: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(COUNTRIES[0]); // Default India +91
