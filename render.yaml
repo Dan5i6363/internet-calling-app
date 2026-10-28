@@ -6,6 +6,7 @@ services:
     region: oregon
     buildCommand: npm install && npm run build
     startCommand: node server.js
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,3 +18,8 @@ services:
         value: "false"
       - key: NEXT_PUBLIC_STUN_SERVERS
         value: "stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302"
+      # Neon.tech Free Tier PostgreSQL connection string (Recommended: persistent, doesn't expire in 30 days)
+      # e.g., postgresql://[user]:[password]@[endpoint].neon.tech/[dbname]?sslmode=require
+      # If omitted, application uses zero-setup local file persistence with an explicit warning on /api/health
+      - key: DATABASE_URL
+        sync: false

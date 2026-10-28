@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Save initial record to store
-    telephonyStore.addCall({
+    await telephonyStore.addCall({
       callId: session.callId,
       targetNumber: session.targetNumber,
       countryCode: session.countryCode,

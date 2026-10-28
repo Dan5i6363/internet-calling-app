@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const provider = eligibilityGate.getActiveProvider(countryCode || 'IN');
     const result = await provider.terminateCall(callId);
 
-    telephonyStore.updateCall(callId, {
+    await telephonyStore.updateCall(callId, {
       state: 'ended',
       durationSeconds: result.durationSeconds,
       endedAt: new Date().toISOString(),

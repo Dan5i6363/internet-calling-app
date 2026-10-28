@@ -1,11 +1,22 @@
 const fs = require('fs');
 const path = require('path');
+const { PostgresAdapter } = require('./pgAdapter');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'calling_db.json');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+let pgAdapter = null;
+const databaseUrl = process.env.DATABASE_URL;
+
+if (databaseUrl && typeof databaseUrl === 'string' && databaseUrl.trim().length > 0) {
+  try {
+    pgAdapter = new PostgresAdapter(databaseUrl.trim());
+    console.log('[DB] Configured hosted PostgreSQL adapter via DATABASE_URL');
+  } catch (err) {
+    console.error('[DB] Failed to initialize PostgresAdapter:', err.message);
+  }
+} else {
+  console.log('[DB] No DATABASE_URL provided. Using local file persistence (data/calling_db.json)');
 }
 
 function loadDB() {
@@ -34,13 +45,47 @@ function saveDB(db) {
 }
 
 const dbStore = {
+  isPostgres() {
+    return pgAdapter !== null;
+  },
+
+  getPostgresAdapter() {
+    return pgAdapter;
+  },
+
+  async checkHealth() {
+    if (pgAdapter) {
+      const pgHealth = await pgAdapter.checkHealth();
+      return {
+        type: 'postgres',
+        connected: pgHealth.connected,
+        latencyMs: pgHealth.latencyMs,
+        error: pgHealth.error,
+        persistent: true,
+      };
+    }
+    return {
+      type: 'local-json',
+      connected: true,
+      persistent: false, // Ephemeral on container restart / cloud free tier
+      filePath: DB_FILE,
+      warning: 'Local JSON storage is not persistent on cloud platforms like Render free tier. Set DATABASE_URL to use hosted PostgreSQL.',
+    };
+  },
+
   getUser(username) {
+    if (pgAdapter) {
+      return pgAdapter.getUser(username);
+    }
     if (!username) return null;
     const db = loadDB();
     return db.users[username.toLowerCase().trim()] || null;
   },
 
   getUserById(id) {
+    if (pgAdapter) {
+      return pgAdapter.getUserById(id);
+    }
     if (!id) return null;
     const db = loadDB();
     for (const u of Object.values(db.users)) {
@@ -50,6 +95,9 @@ const dbStore = {
   },
 
   createUser(user) {
+    if (pgAdapter) {
+      return pgAdapter.createUser(user);
+    }
     const db = loadDB();
     const key = user.username.toLowerCase().trim();
     if (db.users[key]) {
@@ -68,6 +116,9 @@ const dbStore = {
   },
 
   searchUsers(query, excludeUsername) {
+    if (pgAdapter) {
+      return pgAdapter.searchUsers(query, excludeUsername);
+    }
     const db = loadDB();
     const q = (query || '').toLowerCase().trim();
     const results = [];
@@ -85,10 +136,15 @@ const dbStore = {
   },
 
   addCallRecord(record) {
+    if (pgAdapter) {
+      return pgAdapter.addCallRecord(record);
+    }
     const db = loadDB();
     const newRecord = {
       ...record,
-      id: 'call_' + Math.random().toString(36).substring(2, 12),
+      id: record.id || 'call_' + Math.random().toString(36).substring(2, 12),
+      startedAt: record.startedAt || new Date().toISOString(),
+      durationSeconds: record.durationSeconds || 0,
     };
     db.callHistory.unshift(newRecord);
     if (db.callHistory.length > 500) {
@@ -99,6 +155,9 @@ const dbStore = {
   },
 
   updateCallRecord(id, updates) {
+    if (pgAdapter) {
+      return pgAdapter.updateCallRecord(id, updates);
+    }
     const db = loadDB();
     const idx = db.callHistory.findIndex(c => c.id === id);
     if (idx !== -1) {
@@ -110,6 +169,9 @@ const dbStore = {
   },
 
   getCallHistory(username) {
+    if (pgAdapter) {
+      return pgAdapter.getCallHistory(username);
+    }
     const db = loadDB();
     const u = (username || '').toLowerCase().trim();
     return db.callHistory.filter(c => c.caller.toLowerCase() === u || c.callee.toLowerCase() === u);

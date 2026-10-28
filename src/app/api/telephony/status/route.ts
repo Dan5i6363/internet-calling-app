@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Update store
-    telephonyStore.updateCall(callId, {
+    await telephonyStore.updateCall(callId, {
       state: session.state,
       durationSeconds: session.durationSeconds,
     });

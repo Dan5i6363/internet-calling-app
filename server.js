@@ -10,7 +10,7 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const server = http.createServer((req, res) => {
     // Ultra-fast health check probe for cloud load balancers / Render
-    if (req.url === '/healthz' || req.url === '/api/health') {
+    if (req.url === '/healthz') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'ok', uptime: Math.round(process.uptime()) }));
       return;

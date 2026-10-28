@@ -142,7 +142,7 @@ class SignalingServer {
         }
 
         const duration = call.startedAt ? Math.round((Date.now() - call.startedAt) / 1000) : 0;
-        dbStore.addCallRecord({
+        this.logCallRecord({
           caller: call.caller,
           callee: call.callee,
           status: call.state === 'in_call' ? 'completed' : 'missed',
@@ -156,6 +156,17 @@ class SignalingServer {
     }
 
     this.broadcastPresence(uname, 'offline');
+  }
+
+  logCallRecord(record) {
+    try {
+      const res = dbStore.addCallRecord(record);
+      if (res && typeof res.catch === 'function') {
+        res.catch(err => console.error('[Signaling] Failed to record call:', err.message));
+      }
+    } catch (err) {
+      console.error('[Signaling] Failed to record call:', err.message);
+    }
   }
 
   broadcastPresence(username, status) {
@@ -197,7 +208,7 @@ class SignalingServer {
 
         const targetWs = this.clients.get(target);
         if (!targetWs || targetWs.readyState !== WebSocket.OPEN) {
-          dbStore.addCallRecord({
+          this.logCallRecord({
             caller: sender,
             callee: target,
             status: 'failed',
@@ -210,7 +221,7 @@ class SignalingServer {
 
         const targetState = this.userStates.get(target);
         if (targetState && targetState !== 'idle') {
-          dbStore.addCallRecord({
+          this.logCallRecord({
             caller: sender,
             callee: target,
             status: 'busy',
@@ -325,7 +336,7 @@ class SignalingServer {
           });
         }
 
-        dbStore.addCallRecord({
+        this.logCallRecord({
           caller: call.caller,
           callee: call.callee,
           status: 'rejected',
@@ -362,7 +373,7 @@ class SignalingServer {
           });
         }
 
-        dbStore.addCallRecord({
+        this.logCallRecord({
           caller: call.caller,
           callee: call.callee,
           status: 'missed',
@@ -455,7 +466,7 @@ class SignalingServer {
         });
 
         const duration = call.startedAt ? Math.round((Date.now() - call.startedAt) / 1000) : 0;
-        dbStore.addCallRecord({
+        this.logCallRecord({
           caller: call.caller,
           callee: call.callee,
           status: call.startedAt ? 'completed' : 'missed',
@@ -500,7 +511,7 @@ class SignalingServer {
       });
     }
 
-    dbStore.addCallRecord({
+    this.logCallRecord({
       caller: call.caller,
       callee: call.callee,
       status: 'missed',

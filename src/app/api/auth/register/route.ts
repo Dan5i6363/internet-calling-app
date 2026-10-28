@@ -24,13 +24,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
     }
 
-    const existing = dbStore.getUser(cleanUsername);
+    const existing = await dbStore.getUser(cleanUsername);
     if (existing) {
       return NextResponse.json({ error: 'Username is already taken' }, { status: 409 });
     }
 
     const passwordHash = hashPassword(password);
-    const newUser = dbStore.createUser({
+    const newUser = await dbStore.createUser({
       username: cleanUsername,
       displayName: (displayName && typeof displayName === 'string') ? displayName.trim() : cleanUsername,
       passwordHash,

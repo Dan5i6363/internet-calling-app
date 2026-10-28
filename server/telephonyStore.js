@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { dbStore } = require('./db');
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const TELEPHONY_DB_FILE = path.join(DATA_DIR, 'telephony_db.json');
@@ -55,6 +56,10 @@ const telephonyStore = {
   },
 
   addCall(record) {
+    const pg = dbStore.getPostgresAdapter();
+    if (pg) {
+      return pg.addTelephonyCall(record);
+    }
     const db = loadTelephonyDB();
     const entry = {
       ...record,
@@ -70,6 +75,10 @@ const telephonyStore = {
   },
 
   updateCall(callId, updates) {
+    const pg = dbStore.getPostgresAdapter();
+    if (pg) {
+      return pg.updateTelephonyCall(callId, updates);
+    }
     const db = loadTelephonyDB();
     const idx = db.calls.findIndex(c => c.callId === callId || c.id === callId);
     if (idx !== -1) {
@@ -81,16 +90,28 @@ const telephonyStore = {
   },
 
   getRecentCalls() {
+    const pg = dbStore.getPostgresAdapter();
+    if (pg) {
+      return pg.getRecentTelephonyCalls();
+    }
     const db = loadTelephonyDB();
     return db.calls;
   },
 
   getFavorites() {
+    const pg = dbStore.getPostgresAdapter();
+    if (pg) {
+      return pg.getFavorites();
+    }
     const db = loadTelephonyDB();
     return db.favorites;
   },
 
   addFavorite(fav) {
+    const pg = dbStore.getPostgresAdapter();
+    if (pg) {
+      return pg.addFavorite(fav);
+    }
     const db = loadTelephonyDB();
     const exists = db.favorites.find(f => f.phoneNumber === fav.phoneNumber);
     if (exists) return exists;
@@ -109,6 +130,10 @@ const telephonyStore = {
   },
 
   removeFavorite(id) {
+    const pg = dbStore.getPostgresAdapter();
+    if (pg) {
+      return pg.removeFavorite(id);
+    }
     const db = loadTelephonyDB();
     db.favorites = db.favorites.filter(f => f.id !== id && f.phoneNumber !== id);
     saveTelephonyDB(db);

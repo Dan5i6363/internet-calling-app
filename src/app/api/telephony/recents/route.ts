@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const calls = telephonyStore.getRecentCalls();
+    const calls = await telephonyStore.getRecentCalls();
     return NextResponse.json({ calls });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

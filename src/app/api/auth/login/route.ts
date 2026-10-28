@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanUsername = username.trim().toLowerCase();
-    const user = dbStore.getUser(cleanUsername);
+    const user = await dbStore.getUser(cleanUsername);
 
     if (!user) {
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });

@@ -14,6 +14,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const history = dbStore.getCallHistory(decoded.username);
+  const history = await dbStore.getCallHistory(decoded.username);
   return NextResponse.json({ history });
 }

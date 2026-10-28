@@ -17,6 +17,6 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const query = url.searchParams.get('q') || '';
 
-  const users = dbStore.searchUsers(query, decoded.username);
+  const users = await dbStore.searchUsers(query, decoded.username);
   return NextResponse.json({ users });
 }

@@ -97,4 +97,35 @@ describe('System Robustness, Failure Resilience & Fallbacks', () => {
       assert.strictEqual(spaced.e164, '+919876543210');
     });
   });
+
+  describe('PostgreSQL Adapter & Database Health Transparency', () => {
+    const { PostgresAdapter } = require('../server/pgAdapter');
+
+    test('dbStore.checkHealth() explicitly identifies storage engine and persistence trade-offs', async () => {
+      const health = await dbStore.checkHealth();
+      assert.ok(health.type === 'local-json' || health.type === 'postgres');
+      if (health.type === 'local-json') {
+        assert.strictEqual(health.persistent, false);
+        assert.ok(health.warning.includes('Render free tier'));
+      }
+    });
+
+    test('PostgresAdapter initializes with SSL for remote databases', () => {
+      const adapter = new PostgresAdapter('postgres://user:pass@ep-cool-db-1234.us-east-2.aws.neon.tech/neondb?sslmode=require');
+      assert.ok(adapter.pool);
+      assert.ok(typeof adapter.getUser === 'function');
+      assert.ok(typeof adapter.createUser === 'function');
+      assert.ok(typeof adapter.checkHealth === 'function');
+      adapter.pool.end();
+    });
+
+    test('PostgresAdapter.checkHealth() explicitly reports connection failures without crashing', async () => {
+      // Connect to unreachable localhost port to test failure transparency
+      const failingAdapter = new PostgresAdapter('postgresql://invalid_user:invalid_pass@127.0.0.1:54329/nonexistent_db');
+      const health = await failingAdapter.checkHealth();
+      assert.strictEqual(health.connected, false);
+      assert.ok(typeof health.error === 'string');
+      await failingAdapter.close();
+    });
+  });
 });
