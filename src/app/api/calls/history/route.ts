@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
-import { dbStore } from '@/lib/db';
+import { verifyToken } from '../../../../lib/auth';
+import { dbStore } from '../../../../lib/db';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');

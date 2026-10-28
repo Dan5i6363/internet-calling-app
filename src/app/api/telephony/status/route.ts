@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eligibilityGate } from '@/lib/telephony/eligibilityGate';
+import { eligibilityGate } from '../../../../lib/telephony/eligibilityGate';
 const { telephonyStore } = require('../../../../../server/telephonyStore');
 
 export const dynamic = 'force-dynamic';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateAndFormatNumber, COUNTRIES, CountryInfo } from '@/lib/telephony/phoneUtils';
-import { eligibilityGate } from '@/lib/telephony/eligibilityGate';
+import { validateAndFormatNumber, COUNTRIES, CountryInfo } from '../../../../lib/telephony/phoneUtils';
+import { eligibilityGate } from '../../../../lib/telephony/eligibilityGate';
 const { telephonyStore } = require('../../../../../server/telephonyStore');
 
 export const dynamic = 'force-dynamic';

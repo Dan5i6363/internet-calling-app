@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "node server.js",
     "lint": "next lint",
-    "test": "node --test tests/calling_app.test.js && node --test tests/telephony.test.js && node --test tests/robustness.test.js"
+    "test": "node scripts/verify_imports.js && node --test tests/calling_app.test.js && node --test tests/telephony.test.js && node --test tests/robustness.test.js"
   },
   "dependencies": {
     "@neon/config": "^1.9.5",
